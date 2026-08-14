@@ -24,14 +24,18 @@ final class StateMachine {
                        && $0.startedAt < $1.startedAt) }
     }
 
-    /// 表示上のプライマリセッション（displayPriority 最小、同率なら startedAt が早い方）。
+    /// 表示上のプライマリセッション。displayPriority 最小 → startedAt が早い方 →
+    /// sessionID 昇順、の順で完全に決定的に選ぶ（Dictionary の列挙順に依存しない）。
     /// displayPhase はこのセッションの phase になる。
     private var primarySession: SessionState? {
         sessions.values.min { a, b in
             if a.phase.displayPriority != b.phase.displayPriority {
                 return a.phase.displayPriority < b.phase.displayPriority
             }
-            return a.startedAt < b.startedAt
+            if a.startedAt != b.startedAt {
+                return a.startedAt < b.startedAt
+            }
+            return a.sessionID < b.sessionID
         }
     }
 
@@ -246,7 +250,7 @@ final class StateMachine {
     // MARK: - displayPhase 再計算
 
     /// sessions から displayPhase を再計算し、変化があれば onPhaseChanged を発火する。
-    /// 同一 displayPriority のセッションが複数ある場合は startedAt が早い方を選択する（決定的）。
+    /// プライマリ選択は primarySession（priority → startedAt → sessionID）で決定的。
     /// セッション数が変化した場合は onSessionCountChanged を発火する。
     private func recalculateDisplayPhase() {
         updateDisplayPhase(to: primarySession?.phase ?? .idle)

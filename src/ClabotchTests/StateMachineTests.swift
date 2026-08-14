@@ -590,6 +590,25 @@ final class StateMachineMultiSessionTests: XCTestCase {
         XCTAssertEqual(ephemeralMs, [1000, 2000])
     }
 
+    // MS-7c. displayPriority と startedAt が完全同率のときは sessionID で決定的に選ぶ（patch_022）
+    func testPrimaryTieBreaksBySessionID() {
+        let fixed = Date(timeIntervalSince1970: 3_000)
+        let sm = StateMachine(doneAutoTransitionDelay: 10, now: { fixed })
+        var ephemeralMs: [Int] = []
+        sm.onEphemeralDone = { ephemeralMs.append($0) }
+
+        sm.handle(event: .sessionStart(sessionID: "b"))
+        sm.handle(event: .sessionStart(sessionID: "a"))
+        sm.handle(event: .sessionDone(sessionID: "a", elapsedMs: 1000))
+        sm.handle(event: .sessionDone(sessionID: "b", elapsedMs: 2000))
+
+        // 両セッション同時刻 startedAt・両方 done → sessionID 昇順で "a" がプライマリ表示
+        XCTAssertEqual(sm.displayPhase, .done(elapsedMs: 1000))
+        // a done 時: b=thinking がプライマリ → ephemeral(1000)
+        // b done 時: a がプライマリ（タイブレーク）→ ephemeral(2000)
+        XCTAssertEqual(ephemeralMs, [1000, 2000])
+    }
+
     // MS-8. セッション A の error auto-transition は B のイベントに影響されない
     func testPerSessionEpochIsolation() {
         let sm = StateMachine(errorAutoTransitionDelay: 0.1)
