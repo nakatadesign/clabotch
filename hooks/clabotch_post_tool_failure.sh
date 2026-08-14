@@ -18,6 +18,10 @@ fi
 TOOL_QUOTED=$(json_escape "$(resolve_tool_name "$HOOK_JSON")")
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-printf '{"schema_version":"1","event":"tool_end","session_id":"%s","event_id":"%s","timestamp":"%s","tool_name":%s,"duration_ms":%s,"is_error":true,"error_message":"tool failed"}\n' \
+# session_start（冪等、再同期用）+ tool_end を1接続・1回の write で送信
+SS_LINE=$(printf '{"schema_version":"1","event":"session_start","session_id":"%s","event_id":"%s","timestamp":"%s"}' \
+  "$SESSION_ID" "$(generate_uuid)" "$NOW")
+TE_LINE=$(printf '{"schema_version":"1","event":"tool_end","session_id":"%s","event_id":"%s","timestamp":"%s","tool_name":%s,"duration_ms":%s,"is_error":true,"error_message":"tool failed"}' \
   "$SESSION_ID" "$(generate_uuid)" "$NOW" "$TOOL_QUOTED" \
-  "${CLAUDE_TOOL_DURATION:-0}" | send_json || true
+  "${CLAUDE_TOOL_DURATION:-0}")
+printf '%s\n%s\n' "$SS_LINE" "$TE_LINE" | send_json || true

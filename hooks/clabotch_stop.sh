@@ -33,13 +33,13 @@ else
   mkdir -p "$SESSION_REGISTRY"
 fi
 
-# ③ session_start（必要時）+ session_done を1接続で送信
-# 注意: $() は末尾改行を除去するため使わない。直接パイプで printf → send_json。
-{
-  if [[ "$NEEDS_SESSION_START" == "true" ]]; then
-    printf '{"schema_version":"1","event":"session_start","session_id":"%s","event_id":"%s","timestamp":"%s"}\n' \
-      "$SESSION_ID" "$(generate_uuid)" "$NOW"
-  fi
-  printf '{"schema_version":"1","event":"session_done","session_id":"%s","event_id":"%s","timestamp":"%s","elapsed_ms":%d}\n' \
-    "$SESSION_ID" "$(generate_uuid)" "$NOW" "$ELAPSED_MS"
-} | send_json || true
+# ③ session_start（必要時）+ session_done を1接続・1回の write で送信
+DONE_LINE=$(printf '{"schema_version":"1","event":"session_done","session_id":"%s","event_id":"%s","timestamp":"%s","elapsed_ms":%d}' \
+  "$SESSION_ID" "$(generate_uuid)" "$NOW" "$ELAPSED_MS")
+if [[ "$NEEDS_SESSION_START" == "true" ]]; then
+  SS_LINE=$(printf '{"schema_version":"1","event":"session_start","session_id":"%s","event_id":"%s","timestamp":"%s"}' \
+    "$SESSION_ID" "$(generate_uuid)" "$NOW")
+  printf '%s\n%s\n' "$SS_LINE" "$DONE_LINE" | send_json || true
+else
+  printf '%s\n' "$DONE_LINE" | send_json || true
+fi

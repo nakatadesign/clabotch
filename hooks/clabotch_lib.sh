@@ -80,8 +80,8 @@ resolve_tool_name() {
 #   0 = nc が正常終了（実際に送れた）
 #   1 = ソケット不在（Clabotch 未起動）
 #   2 = nc が失敗（stale socket / 受信側再起動レース等）
-# tool_start / tool_end / session_done は戻り値を無視して best-effort。
-# session_start のみ pre_tool で戻り値を見て marker 作成を判断する。
+# tool_end / session_done は戻り値を無視して best-effort。
+# pre_tool のみ戻り値を見て marker（elapsed_ms 計算用の初回ツール時刻）作成を判断する。
 send_json() {
   [[ -S "$SOCK" ]] || return 1
   if nc -w 1 -U "$SOCK" >/dev/null 2>&1; then

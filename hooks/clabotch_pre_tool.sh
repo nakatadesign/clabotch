@@ -22,27 +22,23 @@ fi
 TOOL_QUOTED=$(json_escape "$(resolve_tool_name "$HOOK_JSON")")
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-# ② session_start（初回のみ）+ tool_start を1接続で送信（順序保証）
-# session_start と tool_start が別接続だと受信側で順序逆転する可能性がある。
+# ② session_start（冪等）+ tool_start を1接続で送信（順序保証）
+# session_start は毎回送る。アプリ側は登録済みセッションなら no-op（§14.3 不変条件 4）なので、
+# アプリ再起動やセッションタイムアウト（reap）後もこの再送だけで即座に再同期される。
 # 1つの nc 接続に NDJSON で連結して送ることで、接続内の serial queue で順序を保証する。
+# marker（SESSION_START_FILE）は elapsed_ms 計算用の初回ツール時刻の記録専用。
 SESSION_START_FILE="${SESSION_REGISTRY}/${SESSION_ID}"
 mkdir -p "$SESSION_REGISTRY"
 
-# session_start が必要かどうかパイプ前に判定（パイプ内はサブシェルなので変数が伝播しない）
-INCLUDES_SESSION_START=false
-[[ ! -f "$SESSION_START_FILE" ]] && INCLUDES_SESSION_START=true
-
-# NDJSON ペイロードを構築して1接続で送信
-# 注意: $() は末尾改行を除去するため使わない。直接パイプで printf → send_json。
-{
-  if [[ "$INCLUDES_SESSION_START" == "true" ]]; then
-    printf '{"schema_version":"1","event":"session_start","session_id":"%s","event_id":"%s","timestamp":"%s"}\n' \
-      "$SESSION_ID" "$(generate_uuid)" "$NOW"
-  fi
-  printf '{"schema_version":"1","event":"tool_start","session_id":"%s","event_id":"%s","timestamp":"%s","tool_name":%s}\n' \
-    "$SESSION_ID" "$(generate_uuid)" "$NOW" "$TOOL_QUOTED"
-} | send_json
+# NDJSON ペイロードを構築して1接続・1回の write で送信
+# （複数 write に分けると受信側のチャンク分割に依存する。全体で PIPE_BUF 未満なので
+#   printf 1回 = write 1回で送るのが最も確実。printf '%s\n' が末尾改行を保証する）
+SS_LINE=$(printf '{"schema_version":"1","event":"session_start","session_id":"%s","event_id":"%s","timestamp":"%s"}' \
+  "$SESSION_ID" "$(generate_uuid)" "$NOW")
+TS_LINE=$(printf '{"schema_version":"1","event":"tool_start","session_id":"%s","event_id":"%s","timestamp":"%s","tool_name":%s}' \
+  "$SESSION_ID" "$(generate_uuid)" "$NOW" "$TOOL_QUOTED")
+printf '%s\n%s\n' "$SS_LINE" "$TS_LINE" | send_json
 SEND_RC=$?
-if [[ "$SEND_RC" -eq 0 && "$INCLUDES_SESSION_START" == "true" ]]; then
+if [[ "$SEND_RC" -eq 0 && ! -f "$SESSION_START_FILE" ]]; then
   date +%s > "$SESSION_START_FILE"
 fi
