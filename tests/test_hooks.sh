@@ -152,7 +152,7 @@ rm -rf "$REGISTRY"
 
 # ────────────────────────────────────────────────────────────────────────
 echo ""
-echo "[4] socket 不在時のハング確認（各スクリプト3秒以内に完了）"
+echo "[4] socket 不在時のハング確認（各スクリプト5秒以内に完了）"
 
 for script in clabotch_pre_tool.sh clabotch_post_tool.sh clabotch_post_tool_failure.sh clabotch_stop.sh; do
   START_T=$(date +%s)
@@ -160,7 +160,8 @@ for script in clabotch_pre_tool.sh clabotch_post_tool.sh clabotch_post_tool_fail
   END_T=$(date +%s)
   ELAPSED=$((END_T - START_T))
   TOTAL=$((TOTAL + 1))
-  if [[ "$ELAPSED" -lt 3 ]]; then
+  # ハング（nc の無限待ち）検出が目的。CI ランナーの遅い jq/uuidgen 起動を許容して 5 秒。
+  if [[ "$ELAPSED" -lt 5 ]]; then
     echo "  PASS: $script: ${ELAPSED}秒で完了"
     PASS=$((PASS + 1))
   else

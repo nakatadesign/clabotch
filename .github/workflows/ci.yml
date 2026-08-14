@@ -65,6 +65,9 @@ jobs:
             -derivedDataPath ../artifacts/DerivedData \
             -resultBundlePath ../artifacts/test.xcresult
 
+      - name: Run hook script tests
+        run: bash tests/test_hooks.sh
+
       - name: Upload xcresult artifacts
         if: ${{ failure() }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # pinned SHA
