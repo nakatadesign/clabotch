@@ -262,14 +262,13 @@ final class GazeController {
         }
     }
 
+    /// 視線方向の量子化（§11.5 準拠の origin 相対判定、patch_022）。
+    /// マスコット（status item 中心）から見てターミナル中心が左右どちらにあるかで決める。
+    /// 上下は使わない: メニューバー常駐マスコットの追跡視線は下方向のみ
+    /// （上向きフレームは thinking/responding アニメーション専用）。
     private func quantize(from origin: CGPoint, to target: CGPoint) -> GazeFrame {
-        let screen = NSScreen.screens.first ?? NSScreen.main
-        let screenWidth = screen?.frame.width ?? 1440
-        let screenThresholdX = screenWidth * 0.6
-
-        // 左右判定のみ: 画面左から60%を超えたら右下、それ以外は左下
-        let isRight = target.x >= screenThresholdX
-        return isRight ? .f02_rightDown : .f03_leftDown
+        let dx = target.x - origin.x
+        return dx >= 0 ? .f02_rightDown : .f03_leftDown
     }
 
     private func checkPermission() {

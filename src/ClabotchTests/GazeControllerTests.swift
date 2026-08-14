@@ -367,6 +367,37 @@ final class GazeControllerQuantizeTests: XCTestCase {
         }
         wait(for: [exp], timeout: 1.0)
     }
+
+    // patch_022: 左右判定は origin（マスコット位置）相対。
+    // 旧実装（画面幅 60% の絶対 X 閾値）では以下の 2 ケースが逆判定になる。
+
+    func testQuantizeTerminalLeftOfMascot() {
+        // 画面上は右寄りの座標でも、マスコットより左にあれば leftDown
+        sut.statusItemCenterProvider = { CGPoint(x: 5000, y: 1400) }
+        mockAX.terminalCenter = CGPoint(x: 3000, y: 800)
+
+        sut.startPolling()
+        let exp = expectation(description: "left of mascot → leftDown")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertEqual(self.sut.gazeFrame, .f03_leftDown)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 1.0)
+    }
+
+    func testQuantizeTerminalRightOfMascot() {
+        // 画面上は左寄りの座標でも、マスコットより右にあれば rightDown
+        sut.statusItemCenterProvider = { CGPoint(x: 100, y: 1400) }
+        mockAX.terminalCenter = CGPoint(x: 400, y: 800)
+
+        sut.startPolling()
+        let exp = expectation(description: "right of mascot → rightDown")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertEqual(self.sut.gazeFrame, .f02_rightDown)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 1.0)
+    }
 }
 
 // MARK: - 6e. Polling テスト
