@@ -47,7 +47,7 @@ Events arrive via Claude Code hooks → Unix domain socket → `HookServer` → 
 Grab the latest DMG from [**Releases**](https://github.com/nakatadesign/Clabotch/releases) and drag Clabotch.app into Applications. Then run the hooks installer bundled in the same DMG (the hooks need `jq` at runtime — `brew install jq`):
 
 ```bash
-bash "/Volumes/Clabotch 1.0.0/install.sh"
+bash /Volumes/Clabotch/install.sh
 ```
 
 That replaces steps 1–3. Launch with `open /Applications/Clabotch.app`, restart Claude Code, and you're done.
@@ -157,7 +157,7 @@ xcodebuild test \
   2>&1 | tail -30
 ```
 
-Expected: **401 tests — 400 passed, 1 skipped**.
+Expected: **402 tests — 401 passed, 1 skipped**.
 
 ---
 

@@ -47,7 +47,7 @@ Claude Code の hooks から Unix domain socket 経由でイベントを受信�
 [**Releases**](https://github.com/nakatadesign/Clabotch/releases) から最新の DMG を取得し、Clabotch.app を Applications にドラッグしてください。続けて、同じ DMG に同梱されている hooks インストーラーを実行します（hooks の実行には `jq` が必要です — `brew install jq`）:
 
 ```bash
-bash "/Volumes/Clabotch 1.0.0/install.sh"
+bash /Volumes/Clabotch/install.sh
 ```
 
 これで手順 1〜3 は不要です。`open /Applications/Clabotch.app` で起動し、Claude Code を再起動すれば動き出します。
@@ -157,7 +157,7 @@ xcodebuild test \
   2>&1 | tail -30
 ```
 
-期待値: **401 テスト — 400 passed / 1 skipped**
+期待値: **402 テスト — 401 passed / 1 skipped**
 
 ---
 
