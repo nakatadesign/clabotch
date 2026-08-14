@@ -17,8 +17,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.clabotch.app
         PRODUCT_NAME: Clabotch
         INFOPLIST_KEY_LSUIElement: YES
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: "2"
         INFOPLIST_KEY_CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CODE_SIGN_ENTITLEMENTS: Clabotch/Clabotch.entitlements
         ENABLE_HARDENED_RUNTIME: YES
