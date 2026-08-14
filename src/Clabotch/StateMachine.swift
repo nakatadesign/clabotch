@@ -118,8 +118,25 @@ final class StateMachine {
 
         switch event {
         case .sessionStart(let sessionID):
-            // 重複 session_start は no-op（§14.3 不変条件 4）
-            guard sessions[sessionID] == nil else {
+            if let existing = sessions[sessionID] {
+                // done 保持中（削除待ち 4 秒）の同一 ID は新ターン開始として復帰させる（patch_022）。
+                // Claude Code の Stop は各ターン末に発火するため、同一 session_id の
+                // 次ターンが done 保持中に始まり得る。復帰しないと次ターンの
+                // tool イベントが削除まで破棄される。
+                if existing.phase.isDone {
+                    os_log(.default, "🧠 StateMachine: done セッションを新ターンとして復帰 (sid=%{public}@)",
+                           String(sessionID.prefix(8)))
+                    bumpEpoch(for: sessionID)  // pending removal をキャンセル
+                    sessions[sessionID] = SessionState(
+                        sessionID: sessionID,
+                        phase: .thinking,
+                        startedAt: currentDate,
+                        lastEventAt: currentDate
+                    )
+                    recalculateDisplayPhase()
+                    return
+                }
+                // live セッションへの重複 session_start は no-op（§14.3 不変条件 4）
                 os_log(.debug, "🧠 StateMachine: session_start 重複 → no-op (sid=%{public}@)", String(sessionID.prefix(8)))
                 return
             }

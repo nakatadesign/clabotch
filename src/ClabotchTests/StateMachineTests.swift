@@ -525,12 +525,14 @@ final class StateMachineMultiSessionTests: XCTestCase {
         sm.handle(event: .sessionStart(sessionID: "a"))
         sm.handle(event: .sessionDone(sessionID: "a", elapsedMs: 100))
 
+        // 名目 0.25 秒（removal 0.1 + sleep 0.15）だが、負荷時は asyncAfter/Timer が
+        // 数百 ms ドリフトするため余裕を持って 0.8 秒後に検証する
         let exp = expectation(description: "done → idle → sleep")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             XCTAssertEqual(sm.displayPhase, .sleeping)
             exp.fulfill()
         }
-        wait(for: [exp], timeout: 1)
+        wait(for: [exp], timeout: 2)
     }
 
     // MS-6. 非プライマリセッション done → ephemeral 通知
@@ -670,6 +672,32 @@ final class StateMachineMultiSessionTests: XCTestCase {
         sm.handle(event: .toolEnd(sessionID: "a", toolName: "Bash",
                                    durationMs: 100, isError: true, errorMessage: "err"))
         XCTAssertEqual(sm.sessions["a"]?.phase, .done(elapsedMs: 1000))
+    }
+
+    // MS-10b. done 保持中の同一 ID session_start → 新ターンとして復帰する（patch_022）
+    // Claude Code の Stop は各ターン末に発火するため、4 秒の done 保持中に
+    // 同一セッションの次ターンが始まり得る。復帰しないと次ターンの tool イベントが
+    // 削除まで破棄される。
+    func testSessionStartRevivesDoneSessionAsNewTurn() {
+        let sm = StateMachine(doneAutoTransitionDelay: 0.2)
+        sm.handle(event: .sessionStart(sessionID: "a"))
+        sm.handle(event: .sessionDone(sessionID: "a", elapsedMs: 1000))
+        XCTAssertEqual(sm.displayPhase, .done(elapsedMs: 1000))
+
+        // done 保持中に次ターンの session_start + tool_start
+        sm.handle(event: .sessionStart(sessionID: "a"))
+        XCTAssertEqual(sm.sessions["a"]?.phase, .thinking)
+        sm.handle(event: .toolStart(sessionID: "a", toolName: "Read"))
+        XCTAssertEqual(sm.displayPhase, .working(toolName: "Read"))
+
+        // 旧 done の削除予約（0.2秒）はキャンセルされ、セッションは残り続ける
+        let exp = expectation(description: "pending removal はキャンセル済み")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            XCTAssertEqual(sm.sessions["a"]?.phase, .working(toolName: "Read"))
+            XCTAssertEqual(sm.displayPhase, .working(toolName: "Read"))
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 1)
     }
 
     // MS-11. 同一 priority の 2 セッション → 先着のフェーズが displayPhase
