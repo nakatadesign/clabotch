@@ -46,5 +46,6 @@ public-repo-template/
 tasks/
 tests/*
 !tests/test_hooks.sh
-scripts/
+scripts/*
+!scripts/build_release.sh
 .xcodegen.lock
