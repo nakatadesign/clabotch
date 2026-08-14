@@ -51,10 +51,11 @@ struct RealAXProvider: AXProvider {
             AXUIElementCopyAttributeValue(windows[0], kAXSizeAttribute as CFString, &sizeRef) == .success
         else { return (nil, .terminalInOtherSpace) }
 
-        var pos = CGPoint.zero
-        var size = CGSize.zero
-        AXValueGetValue(posRef as! AXValue, .cgPoint, &pos)
-        AXValueGetValue(sizeRef as! AXValue, .cgSize, &size)
+        // AXValue 型を検証してから取り出す（force cast は不正な AX 応答でクラッシュする）
+        guard
+            let pos = Self.axValue(posRef, as: .cgPoint, into: CGPoint.zero),
+            let size = Self.axValue(sizeRef, as: .cgSize, into: CGSize.zero)
+        else { return (nil, .terminalInOtherSpace) }
 
         // AX 座標系（Y=0 が画面上端、下向き正）→ Cocoa 座標系（Y=0 が画面下端、上向き正）に変換
         // マルチモニタ: primary screen (screens[0]) の高さが座標変換の基準
@@ -62,6 +63,18 @@ struct RealAXProvider: AXProvider {
         let centerX = pos.x + size.width / 2
         let centerY = screenHeight - (pos.y + size.height / 2)
         return (CGPoint(x: centerX, y: centerY), nil)
+    }
+
+    /// CFTypeRef が期待する型の AXValue であることを検証して値を取り出す。
+    private static func axValue<T>(_ ref: CFTypeRef?, as type: AXValueType, into initial: T) -> T? {
+        guard
+            let ref,
+            CFGetTypeID(ref) == AXValueGetTypeID(),
+            AXValueGetType(ref as! AXValue) == type
+        else { return nil }
+        var value = initial
+        guard AXValueGetValue(ref as! AXValue, type, &value) else { return nil }
+        return value
     }
 }
 
