@@ -118,6 +118,10 @@ final class CoordinatorBinder {
 
         stateMachine.onEphemeralDone = { [weak self] elapsedMs in
             guard let self else { return }
+            // patch_022: 非プライマリセッションの完了にも設定有効時は通知音を鳴らす
+            if self.isCompletionSoundEnabled() {
+                self.playCompletionSound(self.completionSoundName())
+            }
             let text = Self.formatElapsedTime(elapsedMs)
             let display = L10n.bubbleForeignSessionDone(elapsedText: text)
             if var anchor = self.anchorProvider() {

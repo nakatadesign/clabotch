@@ -24,6 +24,17 @@ final class StateMachine {
                        && $0.startedAt < $1.startedAt) }
     }
 
+    /// 表示上のプライマリセッション（displayPriority 最小、同率なら startedAt が早い方）。
+    /// displayPhase はこのセッションの phase になる。
+    private var primarySession: SessionState? {
+        sessions.values.min { a, b in
+            if a.phase.displayPriority != b.phase.displayPriority {
+                return a.phase.displayPriority < b.phase.displayPriority
+            }
+            return a.startedAt < b.startedAt
+        }
+    }
+
     // MARK: - コールバック
 
     var onPhaseChanged: ((MascotPhase) -> Void)?
@@ -173,9 +184,10 @@ final class StateMachine {
             scheduleSessionRemoval(for: sessionID, after: doneAutoTransitionDelay)
 
             // 非プライマリセッションの完了: ephemeral 通知
-            // displayPhase が .done でない場合、より高優先のセッションが表示中なので
+            // 完了したセッション自身がプライマリとして表示されない場合
+            // （より高優先のセッション表示中、または先行した別の done が表示中）、
             // ephemeral bubble でユーザーに通知する
-            if !displayPhase.isDone, elapsedMs > 0 {
+            if primarySession?.sessionID != sessionID, elapsedMs > 0 {
                 onEphemeralDone?(elapsedMs)
             }
 
@@ -237,13 +249,7 @@ final class StateMachine {
     /// 同一 displayPriority のセッションが複数ある場合は startedAt が早い方を選択する（決定的）。
     /// セッション数が変化した場合は onSessionCountChanged を発火する。
     private func recalculateDisplayPhase() {
-        let primary = sessions.values.min { a, b in
-            if a.phase.displayPriority != b.phase.displayPriority {
-                return a.phase.displayPriority < b.phase.displayPriority
-            }
-            return a.startedAt < b.startedAt
-        }
-        updateDisplayPhase(to: primary?.phase ?? .idle)
+        updateDisplayPhase(to: primarySession?.phase ?? .idle)
         notifySessionCountIfNeeded()
     }
 

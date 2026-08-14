@@ -566,6 +566,30 @@ final class StateMachineMultiSessionTests: XCTestCase {
         XCTAssertEqual(sm.displayPhase, .done(elapsedMs: 5000))
     }
 
+    // MS-7b. 先行セッションの done が表示中でも後発 done は ephemeral 通知される（patch_022）
+    // 旧実装は displayPhase.isDone で判定していたため、別セッションの done 表示中に
+    // 完了した後発セッションの通知が取りこぼされていた。
+    func testLaterDoneBehindEarlierDoneFiresEphemeral() {
+        var currentTime = Date(timeIntervalSince1970: 1_000)
+        let sm = StateMachine(doneAutoTransitionDelay: 10, now: { currentTime })
+        var ephemeralMs: [Int] = []
+        sm.onEphemeralDone = { ephemeralMs.append($0) }
+
+        sm.handle(event: .sessionStart(sessionID: "a"))
+        currentTime = Date(timeIntervalSince1970: 1_001)
+        sm.handle(event: .sessionStart(sessionID: "b"))
+
+        // a done: b=thinking がプライマリ → a は非プライマリ → ephemeral
+        sm.handle(event: .sessionDone(sessionID: "a", elapsedMs: 1000))
+        XCTAssertEqual(ephemeralMs, [1000])
+
+        // b done: 両方 done、startedAt が早い a がプライマリ表示（displayPhase.isDone）
+        // → 後発の b は表示されないが ephemeral で通知される
+        sm.handle(event: .sessionDone(sessionID: "b", elapsedMs: 2000))
+        XCTAssertEqual(sm.displayPhase, .done(elapsedMs: 1000))
+        XCTAssertEqual(ephemeralMs, [1000, 2000])
+    }
+
     // MS-8. セッション A の error auto-transition は B のイベントに影響されない
     func testPerSessionEpochIsolation() {
         let sm = StateMachine(errorAutoTransitionDelay: 0.1)

@@ -221,4 +221,30 @@ final class AppDelegateCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(playCount, 0)
     }
+
+    // patch_022: 非プライマリセッションの完了（ephemeral done）でも通知音を鳴らす
+
+    func testCompletionSoundPlayedOnEphemeralDoneWhenEnabled() {
+        let binder = makeBinderWithNoSessions()
+        var playCount = 0
+        binder.isCompletionSoundEnabled = { true }
+        binder.playCompletionSound = { _ in playCount += 1 }
+        binder.bind()
+
+        binder.stateMachine.onEphemeralDone?(3000)
+
+        XCTAssertEqual(playCount, 1)
+    }
+
+    func testCompletionSoundNotPlayedOnEphemeralDoneWhenDisabled() {
+        let binder = makeBinderWithNoSessions()
+        var playCount = 0
+        binder.isCompletionSoundEnabled = { false }
+        binder.playCompletionSound = { _ in playCount += 1 }
+        binder.bind()
+
+        binder.stateMachine.onEphemeralDone?(3000)
+
+        XCTAssertEqual(playCount, 0)
+    }
 }
