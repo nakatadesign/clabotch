@@ -157,7 +157,7 @@ xcodebuild test \
   2>&1 | tail -30
 ```
 
-Expected: **402 tests — 401 passed, 1 skipped**.
+Expected: **408 tests — 407 passed, 1 skipped**.
 
 ---
 

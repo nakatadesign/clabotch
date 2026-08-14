@@ -157,7 +157,7 @@ xcodebuild test \
   2>&1 | tail -30
 ```
 
-期待値: **402 テスト — 401 passed / 1 skipped**
+期待値: **408 テスト — 407 passed / 1 skipped**
 
 ---
 
