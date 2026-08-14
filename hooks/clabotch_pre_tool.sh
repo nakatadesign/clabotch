@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse: session_start（初回のみ）+ tool_start を送る
+# PreToolUse: session_start（冪等、毎回）+ tool_start を送る
 source "$(dirname "$0")/clabotch_lib.sh"
 
 # ① stdin を必ず読む（EPIPE 防止）
@@ -31,8 +31,8 @@ SESSION_START_FILE="${SESSION_REGISTRY}/${SESSION_ID}"
 mkdir -p "$SESSION_REGISTRY"
 
 # NDJSON ペイロードを構築して1接続・1回の write で送信
-# （複数 write に分けると受信側のチャンク分割に依存する。全体で PIPE_BUF 未満なので
-#   printf 1回 = write 1回で送るのが最も確実。printf '%s\n' が末尾改行を保証する）
+# （受信側 LineBufferedEventDecoder はチャンク分割を扱えるが、全体で PIPE_BUF 未満の
+#   単一 write は防御的に確実で、nc キャプチャによるテストも容易になる）
 SS_LINE=$(printf '{"schema_version":"1","event":"session_start","session_id":"%s","event_id":"%s","timestamp":"%s"}' \
   "$SESSION_ID" "$(generate_uuid)" "$NOW")
 TS_LINE=$(printf '{"schema_version":"1","event":"tool_start","session_id":"%s","event_id":"%s","timestamp":"%s","tool_name":%s}' \

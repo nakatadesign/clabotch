@@ -43,12 +43,14 @@ is_socket_available() {
   [[ -S "$SOCK" ]]
 }
 
-# JSON 文字列エスケープ（v10: jq -R . に変更）
+# JSON 文字列エスケープ（patch_022: jq -Rs に変更）
 # 出力形式: surrounding " を含む JSON 文字列
-#   例) 入力: hello "world"\n → 出力: "hello \"world\"\n"
+#   例) 入力: hello "world" → 出力: "hello \"world\""
+# -Rs は入力全体を 1 つの JSON 文字列にする（-R は行ごとに分割するため、
+# 改行入り tool_name で複数文字列が出力され NDJSON 行が壊れる）。
 # printf フォーマット内では %s で受け取る（" は不要）
 json_escape() {
-  printf '%s' "$1" | jq -R .
+  printf '%s' "$1" | jq -Rs .
 }
 
 # stdin JSON を読む（必須: 読まないと EPIPE が発生する）

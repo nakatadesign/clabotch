@@ -186,6 +186,17 @@ else
   FAIL=$((FAIL + 1))
 fi
 
+# json_escape（改行入り → 単一 JSON 文字列。-Rs でないと複数文字列に分割され NDJSON が壊れる）
+ESCAPED=$(source "$HOOKS_DIR/clabotch_lib.sh" && json_escape $'multi\nline')
+TOTAL=$((TOTAL + 1))
+if [[ "$ESCAPED" == '"multi\nline"' ]]; then
+  echo "  PASS: json_escape 改行入り → 単一文字列"
+  PASS=$((PASS + 1))
+else
+  echo "  FAIL: json_escape 改行入り result='$ESCAPED'"
+  FAIL=$((FAIL + 1))
+fi
+
 # resolve_session_id（正常）
 SID=$(source "$HOOKS_DIR/clabotch_lib.sh" && resolve_session_id '{"session_id":"abc-123"}')
 assert_contains "resolve_session_id 正常" "$SID" "abc-123"
@@ -262,11 +273,11 @@ assert_contains "post_tool_failure: is_error=true" "$(cat "$CAPTURE4")" '"is_err
 echo ""
 echo "[7] stop: elapsed_ms 計算 + marker 削除"
 
-# marker あり: elapsed_ms > 0、session_start は送らない、marker 削除
+# marker あり: 冪等 session_start + elapsed_ms > 0、marker 削除
 CAPTURE5="${TEST_TMP}/capture_stop1.ndjson"
 run_hook_captured clabotch_stop.sh "{\"session_id\":\"$TEST_SID\"}" "$CAPTURE5"
 assert_contains "stop(marker あり): session_done 送信" "$(cat "$CAPTURE5")" '"event":"session_done"'
-assert_not_contains "stop(marker あり): session_start は送らない" "$(cat "$CAPTURE5")" '"event":"session_start"'
+assert_contains "stop(marker あり): session_start 同送（冪等・reap 後の再同期）" "$(cat "$CAPTURE5")" '"event":"session_start"'
 ELAPSED_VAL=$(grep -o '"elapsed_ms":[0-9-]*' "$CAPTURE5" | cut -d: -f2)
 assert_true "stop(marker あり): elapsed_ms > 0（値=${ELAPSED_VAL:-none}）" \
   "$([[ -n "${ELAPSED_VAL}" && "${ELAPSED_VAL}" -gt 0 ]] && echo true || echo false)"
@@ -277,6 +288,15 @@ CAPTURE6="${TEST_TMP}/capture_stop2.ndjson"
 run_hook_captured clabotch_stop.sh '{"session_id":"no-tool-session"}' "$CAPTURE6"
 assert_contains "stop(marker なし): session_start 同時送信" "$(cat "$CAPTURE6")" '"event":"session_start"'
 assert_contains "stop(marker なし): elapsed_ms=0" "$(cat "$CAPTURE6")" '"elapsed_ms":0'
+
+# marker が未来時刻（時計逆行）: 負の elapsed_ms は 0 に clamp される
+CLOCK_SID="clock-skew-$$"
+mkdir -p "$REGISTRY"
+echo "$(( $(date +%s) + 1000 ))" > "$REGISTRY/$CLOCK_SID"
+CAPTURE7="${TEST_TMP}/capture_stop3.ndjson"
+run_hook_captured clabotch_stop.sh "{\"session_id\":\"$CLOCK_SID\"}" "$CAPTURE7"
+assert_contains "stop(時計逆行): elapsed_ms は 0 に clamp" "$(cat "$CAPTURE7")" '"elapsed_ms":0'
+assert_not_contains "stop(時計逆行): 負の elapsed_ms を送らない" "$(cat "$CAPTURE7")" '"elapsed_ms":-'
 
 # ────────────────────────────────────────────────────────────────────────
 echo ""
