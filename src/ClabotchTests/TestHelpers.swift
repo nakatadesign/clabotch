@@ -61,13 +61,14 @@ func makeTestNDJSON(
     event: String = "session_start",
     sessionID: String = "test-session",
     eventID: UUID = UUID(),
+    timestamp: String = "2026-03-10T09:00:00Z",
     toolName: String? = nil,
     durationMs: Int? = nil,
     isError: Bool? = nil,
     errorMessage: String? = nil,
     elapsedMs: Int? = nil
 ) -> String {
-    var json = "{\"schema_version\":\"1\",\"event_id\":\"\(eventID.uuidString)\",\"event\":\"\(event)\",\"session_id\":\"\(sessionID)\""
+    var json = "{\"schema_version\":\"1\",\"event_id\":\"\(eventID.uuidString)\",\"event\":\"\(event)\",\"session_id\":\"\(sessionID)\",\"timestamp\":\"\(timestamp)\""
     if let toolName { json += ",\"tool_name\":\"\(toolName)\"" }
     if let durationMs { json += ",\"duration_ms\":\(durationMs)" }
     if let isError { json += ",\"is_error\":\(isError)" }
