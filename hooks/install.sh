@@ -58,23 +58,25 @@ if [[ ! -f "${SETTINGS}" ]]; then
   mkdir -p "$(dirname "${SETTINGS}")"
   printf '{\n  "hooks": {\n%s\n  }\n}\n' "${HOOKS_JSON}" > "${SETTINGS}"
   echo "==> Created ${SETTINGS} with Clabotch hook entries"
+elif ! command -v jq &>/dev/null; then
+  # jq がなければ構造検査ができない（そもそも hooks 自体が動かない）。
+  # 「導入済み」とは決して判定せず、検査不能として案内する。既存ファイルは不変更。
+  echo "==> ${SETTINGS} exists — cannot verify its hook entries without jq. NOT modified."
+  echo "    Install jq (brew install jq) and re-run this installer, or make sure"
+  echo "    its \"hooks\" section contains these 4 entries:"
+  echo ""
+  printf '%s\n' "${HOOKS_JSON}"
 else
-  # 4 hook すべての参照を event ごとに個別確認する（部分的な旧設定を「導入済み」と
-  # 誤判定しないため）。既存ファイルはどのケースでも変更しない。
-  # jq があれば構造検査（正しい event キー配下の command を確認）、なければ grep に
-  # フォールバック。hooks は実行時に jq 必須なので通常は構造検査になる。
+  # 4 hook すべての参照を (event, script) ペアで構造検査する（部分的な旧設定や
+  # 誤った event 配下の記述を「導入済み」と誤判定しないため）。
+  # 既存ファイルはどのケースでも変更しない。
   # 注意: bash 3.2 は set -u で空配列展開がエラーになるため文字列で蓄積する。
 
-  # 引数: event名 スクリプト名 → 参照があれば 0
+  # 引数: event名 スクリプト名 → 該当 event 配下に command 参照があれば 0
   settings_references() {
-    local ev="$1" s="$2"
-    if command -v jq &>/dev/null; then
-      jq -e --arg ev "$ev" --arg s "$s" \
-        '[.hooks[$ev] // [] | .[] | .hooks // [] | .[] | .command // "" | select(contains($s))] | length > 0' \
-        "${SETTINGS}" >/dev/null 2>&1
-    else
-      grep -q "$s" "${SETTINGS}"
-    fi
+    jq -e --arg ev "$1" --arg s "$2" \
+      '[.hooks[$ev] // [] | .[] | .hooks // [] | .[] | .command // "" | select(contains($s))] | length > 0' \
+      "${SETTINGS}" >/dev/null 2>&1
   }
 
   MISSING=""
