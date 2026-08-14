@@ -59,13 +59,30 @@ if [[ ! -f "${SETTINGS}" ]]; then
   printf '{\n  "hooks": {\n%s\n  }\n}\n' "${HOOKS_JSON}" > "${SETTINGS}"
   echo "==> Created ${SETTINGS} with Clabotch hook entries"
 else
-  # 4 スクリプトすべての参照を個別に確認する（部分的な旧設定を「導入済み」と
+  # 4 hook すべての参照を event ごとに個別確認する（部分的な旧設定を「導入済み」と
   # 誤判定しないため）。既存ファイルはどのケースでも変更しない。
+  # jq があれば構造検査（正しい event キー配下の command を確認）、なければ grep に
+  # フォールバック。hooks は実行時に jq 必須なので通常は構造検査になる。
   # 注意: bash 3.2 は set -u で空配列展開がエラーになるため文字列で蓄積する。
+
+  # 引数: event名 スクリプト名 → 参照があれば 0
+  settings_references() {
+    local ev="$1" s="$2"
+    if command -v jq &>/dev/null; then
+      jq -e --arg ev "$ev" --arg s "$s" \
+        '[.hooks[$ev] // [] | .[] | .hooks // [] | .[] | .command // "" | select(contains($s))] | length > 0' \
+        "${SETTINGS}" >/dev/null 2>&1
+    else
+      grep -q "$s" "${SETTINGS}"
+    fi
+  }
+
   MISSING=""
-  for s in clabotch_pre_tool.sh clabotch_post_tool.sh clabotch_post_tool_failure.sh clabotch_stop.sh; do
-    grep -q "$s" "${SETTINGS}" || MISSING="${MISSING} ${s}"
-  done
+  settings_references "PreToolUse"         "clabotch_pre_tool.sh"          || MISSING="${MISSING} clabotch_pre_tool.sh"
+  settings_references "PostToolUse"        "clabotch_post_tool.sh"         || MISSING="${MISSING} clabotch_post_tool.sh"
+  settings_references "PostToolUseFailure" "clabotch_post_tool_failure.sh" || MISSING="${MISSING} clabotch_post_tool_failure.sh"
+  settings_references "Stop"               "clabotch_stop.sh"              || MISSING="${MISSING} clabotch_stop.sh"
+
   if [[ -z "${MISSING}" ]]; then
     echo "==> ${SETTINGS} already references all 4 Clabotch hooks — left unchanged"
   else

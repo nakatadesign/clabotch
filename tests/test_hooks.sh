@@ -441,6 +441,23 @@ assert_contains "既存 settings への案内" "$OUTPUT" "NOT modified"
 assert_true "既存 settings は不変更" \
   "$([[ "$(cat "$FAKE_HOME3/.claude/settings.json")" == '{"permissions":{}}' ]] && echo true || echo false)"
 
+# 構造検査: 4 スクリプト名がすべて存在しても、誤った event キー配下なら導入済みにしない
+FAKE_HOME4="${TEST_TMP}/fakehome4"
+rm -rf "$FAKE_HOME4"; mkdir -p "$FAKE_HOME4/.claude"
+cat > "$FAKE_HOME4/.claude/settings.json" <<'JSON'
+{"hooks":{"Stop":[
+  {"matcher":"","hooks":[{"type":"command","command":"~/.claude/hooks/clabotch_pre_tool.sh"}]},
+  {"matcher":"","hooks":[{"type":"command","command":"~/.claude/hooks/clabotch_post_tool.sh"}]},
+  {"matcher":"","hooks":[{"type":"command","command":"~/.claude/hooks/clabotch_post_tool_failure.sh"}]},
+  {"matcher":"","hooks":[{"type":"command","command":"~/.claude/hooks/clabotch_stop.sh"}]}
+]}}
+JSON
+OUTPUT=$(HOME="$FAKE_HOME4" bash "$HOOKS_DIR/install.sh" 2>&1) || true
+MISSING_LINE=$(echo "$OUTPUT" | grep "is missing:" || true)
+assert_contains "誤 event 配下: PreToolUse 不足を検知" "$MISSING_LINE" "clabotch_pre_tool.sh"
+assert_contains "誤 event 配下: PostToolUse 不足を検知" "$MISSING_LINE" "clabotch_post_tool.sh"
+assert_not_contains "誤 event 配下: Stop は正しく導入済み扱い" "$MISSING_LINE" "clabotch_stop.sh"
+
 # ────────────────────────────────────────────────────────────────────────
 echo ""
 echo "=== テスト結果: $PASS/$TOTAL passed, $FAIL failed ==="
