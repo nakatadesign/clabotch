@@ -126,8 +126,9 @@ if [[ "${VERIFY_ONLY}" == "true" ]]; then
   exit "${VERIFY_FAILED}"
 fi
 
-# DEVELOPMENT_TEAM チェック（署名ビルド時）
-if [[ "${UNSIGNED}" == "false" ]]; then
+# DEVELOPMENT_TEAM チェック（署名ビルドを実際に行うときのみ）
+# --skip-build は既存の署名済み .app から DMG を作るだけなので Team ID 不要
+if [[ "${UNSIGNED}" == "false" && "${SKIP_BUILD}" == "false" ]]; then
   if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
     echo "ERROR: DEVELOPMENT_TEAM 環境変数が設定されていません" >&2
     echo "  export DEVELOPMENT_TEAM=\"YOUR_TEAM_ID\"" >&2
