@@ -347,6 +347,21 @@ EC=${EC:-0}
 assert_exit "UUID 形式の session_id → exit 0" "$EC" 0
 unset EC
 
+# 長すぎる session_id（129 文字 > 上限 128）
+LONG_SID=$(printf 'a%.0s' $(seq 1 129))
+OUTPUT=$(echo "{\"session_id\":\"$LONG_SID\",\"tool_name\":\"Bash\"}" | run_hook clabotch_pre_tool.sh 2>&1) || EC=$?
+EC=${EC:-0}
+assert_exit "129 文字の session_id → exit 1" "$EC" 1
+assert_contains "長さ超過メッセージ" "$OUTPUT" "too long"
+unset EC
+
+# 上限ちょうど（128 文字）はパス
+MAX_SID=$(printf 'a%.0s' $(seq 1 128))
+OUTPUT=$(echo "{\"session_id\":\"$MAX_SID\",\"tool_name\":\"Bash\"}" | run_hook clabotch_pre_tool.sh 2>&1) || EC=$?
+EC=${EC:-0}
+assert_exit "128 文字の session_id → exit 0" "$EC" 0
+unset EC
+
 # post_tool / post_tool_failure / stop でもバリデーションが効くこと
 for script in clabotch_post_tool.sh clabotch_post_tool_failure.sh clabotch_stop.sh; do
   OUTPUT=$(echo '{"session_id":"../evil","tool_name":"Bash"}' | run_hook "$script" 2>&1) || EC=$?
@@ -376,6 +391,55 @@ OUTPUT=$(echo '{"session_id":"abc' | run_hook clabotch_pre_tool.sh 2>&1) || EC=$
 EC=${EC:-0}
 assert_exit "不完全 JSON → exit 1" "$EC" 1
 unset EC
+
+# ────────────────────────────────────────────────────────────────────────
+echo ""
+echo "[10] install.sh（HOME 隔離）"
+
+FAKE_HOME="${TEST_TMP}/fakehome"
+
+# 新規 HOME: hooks コピー + settings.json 新規作成（valid JSON）
+rm -rf "$FAKE_HOME"; mkdir -p "$FAKE_HOME"
+OUTPUT=$(HOME="$FAKE_HOME" bash "$HOOKS_DIR/install.sh" 2>&1) || EC=$?
+EC=${EC:-0}
+assert_exit "install.sh(新規 HOME) → exit 0" "$EC" 0
+unset EC
+assert_true "5 スクリプトがコピーされる" \
+  "$([[ $(ls "$FAKE_HOME/.claude/hooks/"clabotch_*.sh 2>/dev/null | wc -l) -eq 5 ]] && echo true || echo false)"
+assert_true "コピー先に実行権限" \
+  "$([[ -x "$FAKE_HOME/.claude/hooks/clabotch_pre_tool.sh" ]] && echo true || echo false)"
+assert_true "settings.json が valid JSON" \
+  "$(jq . "$FAKE_HOME/.claude/settings.json" >/dev/null 2>&1 && echo true || echo false)"
+assert_true "settings.json に 4 hook 全部" \
+  "$([[ $(grep -c "clabotch_" "$FAKE_HOME/.claude/settings.json") -eq 4 ]] && echo true || echo false)"
+
+# 2回目: 完全導入済み → 変更なし
+BEFORE_HASH=$(shasum "$FAKE_HOME/.claude/settings.json" | awk '{print $1}')
+OUTPUT=$(HOME="$FAKE_HOME" bash "$HOOKS_DIR/install.sh" 2>&1) || true
+assert_contains "完全導入済みの検知" "$OUTPUT" "all 4"
+assert_true "settings.json は不変更" \
+  "$([[ "$(shasum "$FAKE_HOME/.claude/settings.json" | awk '{print $1}')" == "$BEFORE_HASH" ]] && echo true || echo false)"
+
+# 部分導入（pre_tool のみ）: 不足分を警告し、ファイルは不変更
+FAKE_HOME2="${TEST_TMP}/fakehome2"
+rm -rf "$FAKE_HOME2"; mkdir -p "$FAKE_HOME2/.claude"
+echo '{"hooks":{"PreToolUse":[{"matcher":"","hooks":[{"type":"command","command":"~/.claude/hooks/clabotch_pre_tool.sh"}]}]}}' \
+  > "$FAKE_HOME2/.claude/settings.json"
+BEFORE_HASH2=$(shasum "$FAKE_HOME2/.claude/settings.json" | awk '{print $1}')
+OUTPUT=$(HOME="$FAKE_HOME2" bash "$HOOKS_DIR/install.sh" 2>&1) || true
+assert_contains "部分導入の検知（missing 表示）" "$OUTPUT" "missing"
+assert_contains "不足エントリに clabotch_stop.sh を含む" "$OUTPUT" "clabotch_stop.sh"
+assert_true "部分導入でも settings.json は不変更" \
+  "$([[ "$(shasum "$FAKE_HOME2/.claude/settings.json" | awk '{print $1}')" == "$BEFORE_HASH2" ]] && echo true || echo false)"
+
+# clabotch 無関係の既存 settings: マージ用スニペットを表示し、ファイルは不変更
+FAKE_HOME3="${TEST_TMP}/fakehome3"
+rm -rf "$FAKE_HOME3"; mkdir -p "$FAKE_HOME3/.claude"
+echo '{"permissions":{}}' > "$FAKE_HOME3/.claude/settings.json"
+OUTPUT=$(HOME="$FAKE_HOME3" bash "$HOOKS_DIR/install.sh" 2>&1) || true
+assert_contains "既存 settings への案内" "$OUTPUT" "NOT modified"
+assert_true "既存 settings は不変更" \
+  "$([[ "$(cat "$FAKE_HOME3/.claude/settings.json")" == '{"permissions":{}}' ]] && echo true || echo false)"
 
 # ────────────────────────────────────────────────────────────────────────
 echo ""

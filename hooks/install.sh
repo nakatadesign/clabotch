@@ -58,13 +58,22 @@ if [[ ! -f "${SETTINGS}" ]]; then
   mkdir -p "$(dirname "${SETTINGS}")"
   printf '{\n  "hooks": {\n%s\n  }\n}\n' "${HOOKS_JSON}" > "${SETTINGS}"
   echo "==> Created ${SETTINGS} with Clabotch hook entries"
-elif grep -q "clabotch_pre_tool.sh" "${SETTINGS}"; then
-  echo "==> ${SETTINGS} already references Clabotch hooks — left unchanged"
 else
-  echo "==> ${SETTINGS} already exists — NOT modified."
-  echo "    Merge these 4 entries into its \"hooks\" section manually:"
-  echo ""
-  printf '%s\n' "${HOOKS_JSON}"
+  # 4 スクリプトすべての参照を個別に確認する（部分的な旧設定を「導入済み」と
+  # 誤判定しないため）。既存ファイルはどのケースでも変更しない。
+  # 注意: bash 3.2 は set -u で空配列展開がエラーになるため文字列で蓄積する。
+  MISSING=""
+  for s in clabotch_pre_tool.sh clabotch_post_tool.sh clabotch_post_tool_failure.sh clabotch_stop.sh; do
+    grep -q "$s" "${SETTINGS}" || MISSING="${MISSING} ${s}"
+  done
+  if [[ -z "${MISSING}" ]]; then
+    echo "==> ${SETTINGS} already references all 4 Clabotch hooks — left unchanged"
+  else
+    echo "==> ${SETTINGS} exists but is missing:${MISSING}"
+    echo "    NOT modified. Merge the missing entries from the 4 below into its \"hooks\" section manually:"
+    echo ""
+    printf '%s\n' "${HOOKS_JSON}"
+  fi
 fi
 
 echo ""

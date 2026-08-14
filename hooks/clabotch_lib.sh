@@ -23,12 +23,18 @@ generate_uuid() {
 # session_id のバリデーション
 # 安全な文字種（英数字、ハイフン、アンダースコア、ドット）のみ許可。
 # パストラバーサル（/, ..）と JSON インジェクション（", \, 改行）を防ぐ。
+# 長さは 128 文字まで（marker ファイル名の macOS 上限 255 bytes と
+# 受信側 EventParser の 256 文字上限の両方に余裕を持って収まる値）。
 # 不正な値は drop-and-log で呼び元に返す（return 1）。
 validate_session_id() {
   local sid="$1"
   # "." / ".." はファイルパスとして特殊なため明示拒否
   if [[ "$sid" == "." || "$sid" == ".." ]]; then
     echo "[clabotch] WARN: session_id is a reserved path name ('$sid'), dropping event" >&2
+    return 1
+  fi
+  if [[ "${#sid}" -gt 128 ]]; then
+    echo "[clabotch] WARN: session_id too long (${#sid} chars), dropping event" >&2
     return 1
   fi
   if [[ ! "$sid" =~ ^[a-zA-Z0-9_.-]+$ ]]; then
