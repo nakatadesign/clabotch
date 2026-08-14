@@ -24,12 +24,15 @@ final class ClabotchEyeView: NSView {
         static let thinkingDot = NSColor(red: 0x55/255.0, green: 0x77/255.0, blue: 0xAA/255.0, alpha: 1)
     }
 
-    /// まばたきの段階（patch_012: §4 blink シーケンス）
+    /// まばたきの段階。
+    /// patch_022: 表情全面改修後は closed 単段（120ms）のみ使用。
+    /// half / almost は旧 patch_012 シーケンスの名残で、描画は closed と同一
+    ///（テスト互換のため enum は維持）。
     enum BlinkStage: Equatable, CaseIterable {
         case open     // 目が開いている（通常描画）
-        case half     // 半閉じ: ソケット 4×4, 瞳 2×2
-        case almost   // ほぼ閉じ: ソケット 4×2, 瞳なし
-        case closed   // 完全閉じ: 横線 4×1（frame06）
+        case half     // （未使用）描画は closed と同一
+        case almost   // （未使用）描画は closed と同一
+        case closed   // 閉じ: 白目ソケット + 瞳横棒線
     }
 
     // MARK: - アニメーション定数
@@ -214,7 +217,8 @@ final class ClabotchEyeView: NSView {
     }
 
     /// まばたきを発火する。BlinkController.onBlink から呼ばれる。
-    /// §4: open → half(60ms) → almost(60ms) → closed(90ms) → almost(60ms) → half(60ms) → open
+    /// patch_022: open → closed(120ms) → open の単段シーケンス
+    ///（§4 の 5 段階 330ms は表情全面改修で簡略化。blinkSequence 定義を参照）
     func triggerBlink() {
         dispatchPrecondition(condition: .onQueue(.main))
         guard blinkStage == .open else { return }
@@ -745,7 +749,7 @@ final class ClabotchEyeView: NSView {
             }
         } else {
             ctx.setFillColor(faceColor.cgColor)
-            // face: 22×14 — キャンバス全体
+            // face: キャンバス全体（20×14、patch_022）
             px(ctx, 0, 0, Self.canvasWidth, Self.canvasHeight, dot, ox: ox, oy: oy, dy: dy)
         }
     }

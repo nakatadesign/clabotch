@@ -2,8 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Accessibility API（視線追跡に必要） -->
-	<key>com.apple.security.automation.apple-events</key>
-	<true/>
+	<!-- Accessibility API（視線追跡）は entitlement 不要（TCC のユーザー許可のみ）。
+	     未使用の apple-events entitlement は patch_022 で削除。 -->
 </dict>
 </plist>

@@ -2,7 +2,7 @@
 "menu.quit" = "Clabotch を終了";
 
 "onboarding.title" = "Clabotch へようこそ";
-"onboarding.message" = "Claude Code の作業をメニューバーで見守ります。\n\n視線追跡機能を使うにはアクセシビリティの許可が必要です。\n※ 許可しなくても機能の95%%は動作します。";
+"onboarding.message" = "Claude Code の作業をメニューバーで見守ります。\n\n視線追跡機能を使うにはアクセシビリティの許可が必要です。\n※ 許可しなくても機能の95%は動作します。";
 "onboarding.allow" = "許可する";
 "common.later" = "後で";
 
