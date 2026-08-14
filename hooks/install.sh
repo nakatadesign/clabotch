@@ -3,7 +3,7 @@
 #
 # 使い方:
 #   リポジトリから: bash hooks/install.sh
-#   DMG から:       bash "/Volumes/Clabotch 1.0.0/install.sh"
+#   DMG から:       bash /Volumes/Clabotch/install.sh
 #
 # hook スクリプトを ~/.claude/hooks/ にコピーし、~/.claude/settings.json の
 # hooks 設定を（新規作成のときのみ）書き込む。既存の settings.json は変更せず、
