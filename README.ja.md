@@ -44,7 +44,13 @@ Claude Code の hooks から Unix domain socket 経由でイベントを受信�
 
 ### 0. ダウンロード（またはソースからビルド）
 
-[**Releases**](https://github.com/nakatadesign/Clabotch/releases) から最新の DMG を取得し、Clabotch.app を Applications にドラッグしてください — その後は手順 3 へ。
+[**Releases**](https://github.com/nakatadesign/Clabotch/releases) から最新の DMG を取得し、Clabotch.app を Applications にドラッグしてください。続けて、同じ DMG に同梱されている hooks インストーラーを実行します（hooks の実行には `jq` が必要です — `brew install jq`）:
+
+```bash
+bash "/Volumes/Clabotch 1.0.0/install.sh"
+```
+
+これで手順 1〜3 は不要です。`open /Applications/Clabotch.app` で起動し、Claude Code を再起動すれば動き出します。
 
 > 現在のビルドは ad-hoc 署名です（公証は今後対応予定）。初回起動が macOS にブロックされた場合は「**システム設定 → プライバシーとセキュリティ → このまま開く**」を押すか、`xattr -d com.apple.quarantine /Applications/Clabotch.app` を実行してください。
 
@@ -54,7 +60,7 @@ Claude Code の hooks から Unix domain socket 経由でイベントを受信�
 
 ```bash
 git clone https://github.com/nakatadesign/Clabotch.git
-cd clabotch/src
+cd Clabotch/src
 xcodegen generate
 xcodebuild build \
   -project Clabotch.xcodeproj \
@@ -74,11 +80,21 @@ open /Applications/Clabotch.app
 
 ### 3. Claude Code hooks を接続する
 
-hook スクリプトをグローバルの Claude Code hooks ディレクトリにコピーします。
+リポジトリのルートに戻り、インストーラーを実行します。
+
+```bash
+cd ..   # リポジトリのルートへ
+bash hooks/install.sh
+```
+
+インストーラーは hook スクリプトを `~/.claude/hooks/` にコピーし、`~/.claude/settings.json` がまだなければ hooks 設定込みで新規作成します。既存の `settings.json` がある場合は変更せず、マージすべき 4 エントリを表示します。
+
+<details>
+<summary>手動でセットアップする場合</summary>
 
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/*.sh ~/.claude/hooks/
+cp hooks/clabotch_*.sh ~/.claude/hooks/
 chmod +x ~/.claude/hooks/*.sh
 ```
 
@@ -98,6 +114,8 @@ chmod +x ~/.claude/hooks/*.sh
 
 > 既に `hooks` セクションがある場合は、上記の4エントリを既存のセクションにマージしてください。
 
+</details>
+
 Claude Code を再起動すると、次に Claude が作業を始めたときから Clabotch が動き出します。
 
 ---
@@ -106,7 +124,7 @@ Claude Code を再起動すると、次に Claude が作業を始めたときか
 
 ```
 Claude Code hooks（stdin JSON）
-  └─ Unix domain socket  ($TMPDIR/clabotch/clabotch.sock)
+  └─ Unix domain socket  ($TMPDIR/clabotch/hook.sock)
        └─ HookServer
             └─ LineBufferedEventDecoder（接続ごと）
                  └─ EventParser（純粋関数）
@@ -139,7 +157,7 @@ xcodebuild test \
   2>&1 | tail -30
 ```
 
-期待値: **361 テスト — 360 passed / 1 skipped**
+期待値: **401 テスト — 400 passed / 1 skipped**
 
 ---
 
@@ -154,8 +172,8 @@ clabotch/
 │       ├── HookServer.swift         # Unix domain socket サーバー
 │       ├── GazeController.swift     # AX ベースのターミナル追跡
 │       └── CoordinatorBinder.swift  # StateMachine → UI の結線
-├── hooks/                  # Claude Code hook スクリプト（~/.claude/hooks/ にコピー）
-└── docs/                   # スクリーンショットとドキュメント
+├── hooks/                  # Claude Code hook スクリプト + install.sh
+└── tests/                  # hook スクリプトの疎通テスト
 ```
 
 ---

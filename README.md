@@ -44,7 +44,13 @@ Events arrive via Claude Code hooks → Unix domain socket → `HookServer` → 
 
 ### 0. Download (or build from source)
 
-Grab the latest DMG from [**Releases**](https://github.com/nakatadesign/Clabotch/releases) and drag Clabotch.app into Applications — then jump to step 3.
+Grab the latest DMG from [**Releases**](https://github.com/nakatadesign/Clabotch/releases) and drag Clabotch.app into Applications. Then run the hooks installer bundled in the same DMG (the hooks need `jq` at runtime — `brew install jq`):
+
+```bash
+bash "/Volumes/Clabotch 1.0.0/install.sh"
+```
+
+That replaces steps 1–3. Launch with `open /Applications/Clabotch.app`, restart Claude Code, and you're done.
 
 > The current build is ad-hoc signed (not notarized yet). If macOS blocks the first launch, go to **System Settings → Privacy & Security → "Open Anyway"**, or run `xattr -d com.apple.quarantine /Applications/Clabotch.app`.
 
@@ -54,7 +60,7 @@ Prefer building yourself? Continue with step 1.
 
 ```bash
 git clone https://github.com/nakatadesign/Clabotch.git
-cd clabotch/src
+cd Clabotch/src
 xcodegen generate
 xcodebuild build \
   -project Clabotch.xcodeproj \
@@ -74,11 +80,21 @@ On first launch, Clabotch will ask for **Accessibility permission** (required fo
 
 ### 3. Connect Claude Code hooks
 
-Copy the hook scripts to your global Claude Code hooks directory:
+Go back to the repository root and run the installer:
+
+```bash
+cd ..   # back to the repository root
+bash hooks/install.sh
+```
+
+The installer copies the hook scripts to `~/.claude/hooks/` and, if `~/.claude/settings.json` does not exist yet, creates it with the hook entries. An existing `settings.json` is never modified — the installer prints the four entries to merge instead.
+
+<details>
+<summary>Manual setup</summary>
 
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/*.sh ~/.claude/hooks/
+cp hooks/clabotch_*.sh ~/.claude/hooks/
 chmod +x ~/.claude/hooks/*.sh
 ```
 
@@ -98,6 +114,8 @@ Then add the hooks to `~/.claude/settings.json`. If you don't have this file yet
 
 > If you already have a `hooks` section with other entries, merge the four entries above into your existing section.
 
+</details>
+
 Restart Claude Code. Clabotch should spring to life the next time Claude starts working.
 
 ---
@@ -106,7 +124,7 @@ Restart Claude Code. Clabotch should spring to life the next time Claude starts 
 
 ```
 Claude Code hooks (stdin JSON)
-  └─ Unix domain socket  ($TMPDIR/clabotch/clabotch.sock)
+  └─ Unix domain socket  ($TMPDIR/clabotch/hook.sock)
        └─ HookServer
             └─ LineBufferedEventDecoder  (per-connection)
                  └─ EventParser  (pure function)
@@ -139,7 +157,7 @@ xcodebuild test \
   2>&1 | tail -30
 ```
 
-Expected: **361 tests — 360 passed, 1 skipped**.
+Expected: **401 tests — 400 passed, 1 skipped**.
 
 ---
 
@@ -154,8 +172,8 @@ clabotch/
 │       ├── HookServer.swift         # Unix domain socket server
 │       ├── GazeController.swift     # AX-based terminal tracking
 │       └── CoordinatorBinder.swift  # Wires StateMachine → UI
-├── hooks/                  # Claude Code hook scripts (copy to ~/.claude/hooks/)
-└── docs/                   # Screenshots and documentation
+├── hooks/                  # Claude Code hook scripts + install.sh
+└── tests/                  # Hook script integration tests
 ```
 
 ---
