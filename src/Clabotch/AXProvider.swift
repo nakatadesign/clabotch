@@ -66,7 +66,8 @@ struct RealAXProvider: AXProvider {
     }
 
     /// CFTypeRef が期待する型の AXValue であることを検証して値を取り出す。
-    private static func axValue<T>(_ ref: CFTypeRef?, as type: AXValueType, into initial: T) -> T? {
+    /// internal: クラッシュ回避経路（型不一致 → nil）をユニットテストで直接検証するため。
+    static func axValue<T>(_ ref: CFTypeRef?, as type: AXValueType, into initial: T) -> T? {
         guard
             let ref,
             CFGetTypeID(ref) == AXValueGetTypeID(),
