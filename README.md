@@ -4,13 +4,7 @@
 
 [日本語版 README はこちら](README.ja.md)
 
-Clabotch (クラボッチ) lives in your menu bar as a pixel-art character and reflects the real-time state of [Claude Code](https://claude.ai/code) — thinking, running tools, responding, done, or sleeping. No PNGs. Every frame is drawn in pure Swift. The character itself is 20×14 px, centered within the menu bar slot.
-
-Inspired by two icons from different eras: the dot-art look and color palette of Clawd, Claude Code's terminal-native mascot, and the gaze of Eyeballs, the beloved 68K Classic Macintosh desk accessory that watched from the Apple menu. Clabotch carries both forward — a tiny pair of eyes that knows what you're building.
-
 ![Clabotch in menu bar](screenshot.gif)
-
----
 
 ## Download
 
@@ -20,6 +14,12 @@ The build is ad-hoc signed and not notarized yet, so macOS blocks the first laun
 Open **System Settings → Privacy & Security** and press **"Open Anyway"**, or run `xattr -d com.apple.quarantine /Applications/Clabotch.app`.
 
 The DMG also bundles the Claude Code hooks installer — the full steps are in [Quick Start](#quick-start), and older versions are on [Releases](https://github.com/nakatadesign/Clabotch/releases).
+
+---
+
+Clabotch (クラボッチ) lives in your menu bar as a pixel-art character and reflects the real-time state of [Claude Code](https://claude.ai/code) — thinking, running tools, responding, done, or sleeping. No PNGs. Every frame is drawn in pure Swift. The character itself is 20×14 px, centered within the menu bar slot.
+
+Inspired by two icons from different eras: the dot-art look and color palette of Clawd, Claude Code's terminal-native mascot, and the gaze of Eyeballs, the beloved 68K Classic Macintosh desk accessory that watched from the Apple menu. Clabotch carries both forward — a tiny pair of eyes that knows what you're building.
 
 ---
 

@@ -4,13 +4,7 @@
 
 [English README](README.md)
 
-Clabotch（クラボッチ）は macOS メニューバーに常駐するドット絵マスコットです。[Claude Code](https://claude.ai/code) のリアルタイム状態を表示します。PNG 素材ゼロ。全フレームを純粋な Swift コードで描画しています。キャラクター本体は 20×14 px で、メニューバーのスロット内に中央配置されます。
-
-Clabotchのキャラクターのデザインは Claude Code 専用ターミナルマスコット Clawd の配色とドットライクな絵柄と、68K Classic Macintosh のデスクアクセサリ「Eyeballs」——アップルメニューからカーソルを目で追い続けた、あの小さな目玉アプリ。これら2つのオマージュから生まれました。
-
 ![Clabotch in menu bar](screenshot.gif)
-
----
 
 ## ダウンロード
 
@@ -20,6 +14,12 @@ ad-hoc 署名のみで公証は通していないため、初回起動時だけ 
 「**システム設定 → プライバシーとセキュリティ**」を開いて［**このまま開く**］を押すか、`xattr -d com.apple.quarantine /Applications/Clabotch.app` を実行してください。
 
 DMG には Claude Code hooks のインストーラーも同梱されています。詳しい手順は [クイックスタート](#クイックスタート)、過去の版は [Releases](https://github.com/nakatadesign/Clabotch/releases) にあります。
+
+---
+
+Clabotch（クラボッチ）は macOS メニューバーに常駐するドット絵マスコットです。[Claude Code](https://claude.ai/code) のリアルタイム状態を表示します。PNG 素材ゼロ。全フレームを純粋な Swift コードで描画しています。キャラクター本体は 20×14 px で、メニューバーのスロット内に中央配置されます。
+
+Clabotchのキャラクターのデザインは Claude Code 専用ターミナルマスコット Clawd の配色とドットライクな絵柄と、68K Classic Macintosh のデスクアクセサリ「Eyeballs」——アップルメニューからカーソルを目で追い続けた、あの小さな目玉アプリ。これら2つのオマージュから生まれました。
 
 ---
 
