@@ -12,6 +12,17 @@ Clabotchのキャラクターのデザインは Claude Code 専用ターミナ�
 
 ---
 
+## ダウンロード
+
+[**Clabotch-1.0.1.dmg をダウンロード**](https://github.com/nakatadesign/Clabotch/releases/download/v1.0.1/Clabotch-1.0.1.dmg)（約 509 KB / macOS 13 Ventura 以降）
+
+ad-hoc 署名のみで公証は通していないため、初回起動時だけ macOS にブロックされます。
+「**システム設定 → プライバシーとセキュリティ**」を開いて［**このまま開く**］を押すか、`xattr -d com.apple.quarantine /Applications/Clabotch.app` を実行してください。
+
+DMG には Claude Code hooks のインストーラーも同梱されています。詳しい手順は [クイックスタート](#クイックスタート)、過去の版は [Releases](https://github.com/nakatadesign/Clabotch/releases) にあります。
+
+---
+
 ## できること
 
 | Claude Code の状態   | Clabotch の動き                                  |

@@ -12,6 +12,17 @@ Inspired by two icons from different eras: the dot-art look and color palette of
 
 ---
 
+## Download
+
+[**Download Clabotch-1.0.1.dmg**](https://github.com/nakatadesign/Clabotch/releases/download/v1.0.1/Clabotch-1.0.1.dmg) (about 509 KB / macOS 13 Ventura or later)
+
+The build is ad-hoc signed and not notarized yet, so macOS blocks the first launch.
+Open **System Settings → Privacy & Security** and press **"Open Anyway"**, or run `xattr -d com.apple.quarantine /Applications/Clabotch.app`.
+
+The DMG also bundles the Claude Code hooks installer — the full steps are in [Quick Start](#quick-start), and older versions are on [Releases](https://github.com/nakatadesign/Clabotch/releases).
+
+---
+
 ## What it does
 
 | Claude Code state | Clabotch                                                  |
